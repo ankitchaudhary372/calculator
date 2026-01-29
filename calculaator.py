@@ -1,36 +1,85 @@
 import streamlit as st
 
-st.set_page_config(page_title="Simple Calculator", page_icon="🧮")
+st.set_page_config(page_title="Calculator", page_icon="🧮", layout="centered")
 
-st.title("🧮 Simple Calculator")
+# ---------- CSS for Windows-like look ----------
+st.markdown("""
+<style>
+.calc {
+    max-width: 360px;
+    margin: auto;
+}
+.display {
+    background: #f3f3f3;
+    padding: 20px;
+    font-size: 40px;
+    text-align: right;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+.stButton>button {
+    width: 100%;
+    height: 60px;
+    font-size: 20px;
+    border-radius: 8px;
+}
+.op button {
+    background-color: #e6e6e6;
+}
+.equal button {
+    background-color: #0078D4;
+    color: white;
+}
+</style>
+""", unsafe_allow_html=True)
 
-# Input numbers
-num1 = st.number_input("Enter first number", value=0.0)
-num2 = st.number_input("Enter second number", value=0.0)
+# ---------- Session state ----------
+if "expr" not in st.session_state:
+    st.session_state.expr = ""
 
-# Select operation
-operation = st.selectbox(
-    "Select operation",
-    ["Addition (+)", "Subtraction (-)", "Multiplication (*)", "Division (/)"]
-)
+# ---------- Display ----------
+st.markdown('<div class="calc">', unsafe_allow_html=True)
+st.markdown(f'<div class="display">{st.session_state.expr or "0"}</div>', unsafe_allow_html=True)
 
-# Calculate result
-if st.button("Calculate"):
-    if operation == "Addition (+)":
-        result = num1 + num2
-        st.success(f"Result: {result}")
+# ---------- Button handler ----------
+def press(val):
+    if val == "C":
+        st.session_state.expr = ""
+    elif val == "=":
+        try:
+            st.session_state.expr = str(eval(st.session_state.expr))
+        except:
+            st.session_state.expr = "Error"
+    else:
+        st.session_state.expr += val
 
-    elif operation == "Subtraction (-)":
-        result = num1 - num2
-        st.success(f"Result: {result}")
+# ---------- Button layout ----------
+buttons = [
+    ["%", "C", "⌫", "/"],
+    ["7", "8", "9", "*"],
+    ["4", "5", "6", "-"],
+    ["1", "2", "3", "+"],
+    ["±", "0", ".", "="]
+]
 
-    elif operation == "Multiplication (*)":
-        result = num1 * num2
-        st.success(f"Result: {result}")
+for row in buttons:
+    cols = st.columns(4)
+    for i, btn in enumerate(row):
+        with cols[i]:
+            if btn == "=":
+                st.button(btn, on_click=press, args=(btn,), key=btn, type="primary")
+            elif btn in ["+", "-", "*", "/", "%"]:
+                st.button(btn, on_click=press, args=(btn,), key=btn)
+            elif btn == "⌫":
+                st.button(btn, on_click=lambda: st.session_state.__setitem__(
+                    "expr", st.session_state.expr[:-1]
+                ))
+            elif btn == "±":
+                st.button(btn, on_click=lambda: st.session_state.__setitem__(
+                    "expr", "-" + st.session_state.expr if not st.session_state.expr.startswith("-") else st.session_state.expr[1:]
+                ))
+            else:
+                st.button(btn, on_click=press, args=(btn,), key=btn)
 
-    elif operation == "Division (/)":
-        if num2 != 0:
-            result = num1 / num2
-            st.success(f"Result: {result}")
-        else:
-            st.error("❌ Division by zero is not allowed")
+st.markdown('</div>', unsafe_allow_html=True)
